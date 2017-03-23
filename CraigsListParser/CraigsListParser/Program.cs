@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -11,9 +12,9 @@ namespace CraigsListParser
 {
     class Program
     {
-        private static string mainLink = "https://www.craigslist.com.au/s-property-for-rent/forrentby-ownr/c18364"; //start link for parsing
-        private static string craigslistBaselink = "https://www.craigslist.com.au"; //craigslist
-        private static string dbConnectionString = "Data Source=NOTEBOOK;Initial Catalog=Offers;Integrated Security=True"; //string for database with Offers
+        private static string mainLink = "https://losangeles.craigslist.org/search/apa"; //start link for parsing
+        private static string craigslistBaselink = "https://losangeles.craigslist.org"; //craigslist
+        private static string dbConnectionString = "Data Source=NOTEBOOK;Initial Catalog=CraigsList;Integrated Security=True"; //string for database with Offers
         private static Uri craigslistUri = new Uri(craigslistBaselink); //необходимое зло
         private static HtmlParser parser; //один для всех страниц экземпляр парсера
         private static SqlConnection dbConnection;  //переменная подключения к БД
@@ -21,20 +22,21 @@ namespace CraigsListParser
         static void Main(string[] args)
         {
             Init(out parser, out dbConnection);
-     
-  
+            //File.WriteAllText("out.html", GetHtml("https://losangeles.craigslist.org/sfv/apa/6046751995.html"));
+            //System.Diagnostics.Process.Start("chrome.exe", "out.html");
+
         }
-           
+
         private static string GetHtml(string link) //получаем страницу в виде строки, которую будем парсить
         {
-            //а Теперь повторим запрос, но теперь вложим печеньку внутрь запроса с идентификатором сессии
+            
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(link);
             req.Method = "GET";
             req.Timeout = 100000;
             req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
             req.UserAgent = "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36";
             req.KeepAlive = true;
-            req.Host = "www.craigslist.com.au";
+            //req.Host = "www.craigslist.com.au";
             //if (cookies != null)
             //{
             //    req.CookieContainer = cookies; //самый важный пункт: сюда добавляем печеньку с идентификатором авторизации
