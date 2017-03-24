@@ -9,39 +9,24 @@ namespace CraigsListParser.DataProviders
 {
     public class DataProvider : SingleTone<DataProvider>
     {
-        #region privateMembers
-        private string connectionString = string.Empty;
-        private SqlConnection sqlConnection = null;
-
-        #endregion
-
-        #region PublicProperties
-        /// <summary>
-        /// returns default connectionString
-        /// </summary>
-        public string ConnectionString
-        {
-            get
-            {
-                connectionString = Resource.ConnectionStringDososkov;
-                return connectionString;
-            }
-        }
 
         /// <summary>
         /// returns default Connection
         /// </summary>
         public SqlConnection Connection
         {
+            
             get
             {
-                if(sqlConnection == null)
+
+                SqlConnection sqlConnection = null;
+                if (sqlConnection == null)
                 {
-                    sqlConnection = new SqlConnection(ConnectionString);
+                    sqlConnection = new SqlConnection(Resources.DbConnectionString);
                 }
                 if(string.IsNullOrEmpty(sqlConnection.ConnectionString))
                 {
-                    sqlConnection.ConnectionString = ConnectionString;
+                    sqlConnection.ConnectionString = Resources.DbConnectionString;
                 }
                 return sqlConnection;
             }
@@ -53,7 +38,7 @@ namespace CraigsListParser.DataProviders
             int numberOfRowsAffected = 0;
             if(sqlCommand.CommandType != CommandType.StoredProcedure)
             {
-                throw new Exception("No StoredProcedure");
+                throw new Exception("Not StoredProcedure");
             }
             try
             {
@@ -90,31 +75,13 @@ namespace CraigsListParser.DataProviders
         /// </summary>
         /// <param name="command">Command for database.</param>      
         ///<returns>The DataSet object.</returns> 
-        public static DataSet GetDataSet(DbCommand command)
-        {
-            SqlDataAdapter da = new SqlDataAdapter();
-            DataSet dataSet = new DataSet();
-            try
-            {
-                //if use SqlDataAdapter - ew do not beed open and close connection. Adapter does own.
-                da.SelectCommand = (SqlCommand)command;
-                da.Fill(dataSet);
-                return dataSet;
-            }
-            catch(SqlException ex)
-            {
-                throw new Exception(ex.Message, ex);
-            }
-        }
+        
 
 
-        #endregion
 
-        #region PublicMethods
 
-        #endregion
 
-        #region Protected Methods
+        #region Public Methods
 
         /// <summary>
         /// Create SQL command for stored procedure
@@ -124,7 +91,7 @@ namespace CraigsListParser.DataProviders
         /// <remarks></remarks>
         public SqlCommand CreateSQLCommandForSP(string spName)
         {
-            SqlCommand command = new SqlCommand(spName, new SqlConnection(ConnectionString));
+            SqlCommand command = new SqlCommand(spName, new SqlConnection(Resources.DbConnectionString));
             command.CommandType = CommandType.StoredProcedure;
             // command.Connection.Open();
             return command;
@@ -138,8 +105,9 @@ namespace CraigsListParser.DataProviders
         /// <remarks></remarks>
         public SqlCommand CreateSQLCommand(string query)
         {
-            SqlCommand command = new SqlCommand(query, new SqlConnection(ConnectionString));
+            SqlCommand command = new SqlCommand(query, new SqlConnection(Resources.DbConnectionString));
             command.CommandType = CommandType.Text;
+            
             return command;
         }
 
@@ -166,7 +134,7 @@ namespace CraigsListParser.DataProviders
         /// <param name="direction">Parameter direction</param>
         /// <returns>Filled SQL parameter</returns>
         /// <remarks></remarks>
-        protected SqlParameter CreateSqlParameter(string columnName, SqlDbType dbType, object value, ParameterDirection direction)
+        public SqlParameter CreateSqlParameter(string columnName, SqlDbType dbType, object value, ParameterDirection direction)
         {
             // Add parametors
             SqlParameter param = new SqlParameter(string.Format("@{0}", columnName), dbType);
@@ -182,7 +150,7 @@ namespace CraigsListParser.DataProviders
         /// </summary>
         /// <param name="parameterName"></param>
         /// <returns></returns>
-        protected string SqlParametrName(string parameterName)
+        public string SqlParameterName(string parameterName)
         {
             return string.Format("@{0}", parameterName);
         }
