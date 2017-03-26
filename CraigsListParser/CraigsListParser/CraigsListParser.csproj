@@ -51,6 +51,7 @@
     <Compile Include="Components\Constants.cs" />
     <Compile Include="Components\DataProvider.cs" />
     <Compile Include="Components\SingleTone.cs" />
+    <Compile Include="Offer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resources.Designer.cs">

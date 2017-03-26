@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using CraigsListParser.DataProviders;
 using CraigsListParser.Components;
+using AngleSharp.Dom.Html;
+using AngleSharp.Dom;
 
 namespace CraigsListParser
 {
@@ -24,35 +26,39 @@ namespace CraigsListParser
         static void Main(string[] args)
         {
             Init(out parser);
-            //File.WriteAllText("out.html", GetHtml("https://losangeles.craigslist.org/sfv/apa/6046751995.html"));
-            //System.Diagnostics.Process.Start("chrome.exe", "out.html");
-            var startPageDOM = parser.Parse(GetHtml(Resources.MainLink));
+            StartParsing();
+        }
+
+        private static void StartParsing()
+        {
+            var searchPageDOM = parser.Parse(GetHtml(Resources.MainLink)); //получаем стартовую страницу выдачи нужных предложений.
             AngleSharp.Dom.IElement searchResultNextPageLink = null;
             try
             {
-                searchResultNextPageLink = startPageDOM.QuerySelector("a.button.next");
+                searchResultNextPageLink = searchPageDOM.QuerySelector("a.button.next");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
-            if(searchResultNextPageLink != null)
+            if (searchResultNextPageLink != null)
             {
                 do
                 {
-                    Console.WriteLine("Начинаем парсить страницу выдачи: {0}{1}", Resources.MainLink, searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href));
+                    Console.WriteLine("Начинаем парсить страницу выдачи: {0}{1}", Resources.BaseLink, searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href));
 
 
-                    //ParseOffersListPage(conn, client, parser, offersListPageHtmlDocument); //парсим предложения этой страницы
+                    ParseOffersListPage(searchPageDOM); //парсим предложения этой страницы
 
 
                     Console.WriteLine("Спарсили текущую страницу выдачи!");
 
-                    var offersListPageHtmlDocument = parser.Parse(GetHtml(Resources.MainLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));  //получаем DOM-документ одной страницы выдачи предложений
+                    var offersListPageHtmlDocument = parser.Parse(GetHtml(Resources.BaseLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));  //получаем DOM-документ одной страницы выдачи предложений
 
                     searchResultNextPageLink = offersListPageHtmlDocument.QuerySelector("a.button.next");
-                    //Console.WriteLine("Получено:" + Resources.MainLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href));
-                    Console.WriteLine("-------------------------------------");
+                    Console.WriteLine(searchResultNextPageLink != null ? "Получено:" + Resources.BaseLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) : "На этой странице нет результатов и ссылок на следующую страницу!");
+                    searchPageDOM = parser.Parse(GetHtml(Resources.BaseLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));
+                    Console.WriteLine("------------------------------------------");
 
                 } while (searchResultNextPageLink != null);
             }
@@ -62,6 +68,26 @@ namespace CraigsListParser
             }
 
             Console.ReadKey();
+        }
+
+        private static void ParseOffersListPage(IHtmlDocument searchPageDOM)
+        {
+            var links = searchPageDOM.QuerySelectorAll(".result-title.hdrlnk");
+            for(int i = 0;i< links.Length;i++)
+            {
+                Offer o = ParseOffer(parser.Parse(GetHtml(Resources.BaseLink + links[i].GetAttribute(Constants.WebAttrsNames.href)))); //теперь парсим каждую отдельную ссылку(предложение)
+                InsertIntoDB(o);//запихиваем предложение в БД                
+            }
+        }
+
+        private static void InsertIntoDB(Offer o)
+        {
+            
+        }
+
+        private static Offer ParseOffer(IHtmlDocument htmlDocument) //парсит документ DOM конкретного предложения жилья
+        {
+            
         }
 
         private static string GetHtml(string link) //получаем страницу в виде строки, которую будем парсить
