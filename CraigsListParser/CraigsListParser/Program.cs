@@ -87,7 +87,136 @@ namespace CraigsListParser
 
         private static Offer ParseOffer(IHtmlDocument htmlDocument) //парсит документ DOM конкретного предложения жилья
         {
+            Offer o = new Offer();           
             
+            o.ID = GetID(htmlDocument);
+            o.Name = GetOfferName(htmlDocument);
+            o.Description = GetDescription(htmlDocument);
+            o.Price = getPrice(htmlDocument);
+            setProperties(htmlDocument,o); //set bathrooms and bedrooms, Abailible, Square, Additional
+            o.PlaceMapsLink = getPlaceMapLink(htmlDocument);
+            o.PlaceName = getPlace(htmlDocument);
+            o.Posted = getPosted(htmlDocument);
+            o.Updated = getUpdated(htmlDocument);
+            o.Images = getImages(htmlDocument);
+
+            Console.WriteLine("Предложение {0} спарсили!", htmlDocument.QuerySelector("link").GetAttribute("href"));
+            return null;
+        }
+
+        private static string getImages(IHtmlDocument htmlDocument)
+        {
+            var scripts = htmlDocument.QuerySelectorAll("script");
+            foreach (var script in scripts)
+            {
+                if(script.InnerHtml.Contains("imgList"))
+                {
+                    return script.InnerHtml.Replace("<!--\nvar imgList = ", "").Replace("\n-->","");
+                }
+            }
+            return "";
+        }
+
+        private static long GetID(IHtmlDocument htmlDocument)
+        {
+            var a = htmlDocument.QuerySelector("link[rel=canonical]");
+
+            if (a != null)
+            {
+                string id = a.GetAttribute(Constants.WebAttrsNames.href).Split('/')[a.GetAttribute(Constants.WebAttrsNames.href).Split('/').Length - 1].Replace(".html", "");
+                return Convert.ToInt64(id);
+            }
+
+            return -1; //ID на странице нет
+        }
+
+        private static string GetOfferName(IHtmlDocument htmlDocument)
+        {            
+            return htmlDocument.QuerySelector("#titletextonly") != null ? htmlDocument.QuerySelector("#titletextonly").TextContent : "There is no OfferName"; //если на странице есть имя, возвращаем, иначе возвращаем "There is no OfferName"
+        }
+
+        private static string GetDescription(IHtmlDocument htmlDocument)
+        {
+            return htmlDocument.QuerySelector("#postingbody") != null ? htmlDocument.QuerySelector("#postingbody").TextContent : "There is no Description"; //если на странице есть описание, возвращаем, иначе возвращаем "There is no Description"
+        }
+
+        private static double getPrice(IHtmlDocument htmlDocument)
+        {
+            return htmlDocument.QuerySelector("span.price") != null ? Double.Parse(htmlDocument.QuerySelector("span.price").TextContent.Trim('$')) : 0; //если на странице есть цена, возвращаем, иначе возвращаем 0
+        }
+
+        private static void setProperties(IHtmlDocument htmlDocument, Offer o)
+        {
+            var infocollection = htmlDocument.QuerySelectorAll("p.attrgroup");
+            if (infocollection != null)
+            {
+                var firstLineProperties = infocollection[0];
+
+                //Console.WriteLine(firstLineProperties.QuerySelectorAll("span")[0].TextContent);
+
+                foreach (var span in firstLineProperties.QuerySelectorAll("span"))
+                {
+                    if (span.TextContent.Contains("/")) //если есть строка со слешем, значит атм прописаны параметры спален и ванн, парсим
+                    {
+                        o.BedRooms = span.TextContent.Split('/')[0].Trim();  //задаем количество спален
+                        o.BathRooms = span.TextContent.Split('/')[1].Trim(); //задаем количество спален
+                    }
+                    if (span.TextContent.Contains("ft2"))
+                    {
+                        o.Square = Double.Parse(span.TextContent.Replace("ft2", ""));
+                    }
+                    if (span.TextContent.Contains("available"))
+                    {
+                        o.Availability = span.TextContent.Replace("available", "").Trim();
+                    }
+
+                }
+                if (infocollection.Length > 1)
+                {
+                    o.Additional = infocollection[infocollection.Length - 1].TextContent.Replace("           ", ""); //если на странице в p.attrgroup есть доп.инфа, заполняем поле
+                }
+
+                //Console.WriteLine();
+                //Console.WriteLine(infocollection[infocollection.Length - 1].TextContent);
+            }
+        }
+
+        private static string getPlaceMapLink(IHtmlDocument htmlDocument)
+        {
+            return htmlDocument.QuerySelector(Constants.OfferSelectorNames.PlaceMapsLink) != null ? htmlDocument.QuerySelector(Constants.OfferSelectorNames.PlaceMapsLink).GetAttribute(Constants.WebAttrsNames.href): "No link";
+        }
+
+        private static string getPlace(IHtmlDocument htmlDocument)
+        {
+            return htmlDocument.QuerySelector(Constants.OfferSelectorNames.PlaceName) != null ? htmlDocument.QuerySelector(Constants.OfferSelectorNames.PlaceName).TextContent : "No Place Name";
+        }
+
+        private static DateTime getPosted(IHtmlDocument htmlDocument) //получает дату размещения публикации
+        {
+            var a = htmlDocument.QuerySelector(Constants.OfferSelectorNames.Posted);
+            
+            return a != null ? Convert.ToDateTime(a.TextContent) : DateTime.MinValue;
+        }
+
+        private static DateTime getUpdated(IHtmlDocument htmlDocument) //получает дату размещения публикации, если дата обновления есть, тогда парсим, иначе берем из Posted
+        {
+            var postingInfos = htmlDocument.QuerySelectorAll(Constants.OfferSelectorNames.Updated);
+            DateTime Updated = DateTime.MinValue;
+            if (postingInfos != null)
+            {
+                foreach (var info in postingInfos)
+                {
+                    if(info.TextContent.Contains("updated:"))
+                    {
+                        Updated =  Convert.ToDateTime(info.QuerySelector("time").TextContent);
+                    }
+                }
+            }
+            if (Updated == DateTime.MinValue)
+            {
+                Updated = getPosted(htmlDocument);
+            }
+            return Updated;
         }
 
         private static string GetHtml(string link) //получаем страницу в виде строки, которую будем парсить
@@ -126,7 +255,8 @@ namespace CraigsListParser
             parser = new HtmlParser(); //создание экземпляра парсера, он можнт быть использован несколько раз, т.е. для всей программы
             //dbConnection = new SqlConnection(Resources.DbConnectionString); //bинициализация подключения к БД
             //cookies = new CookieContainer();
-        }
+        }		
+
 
         //private static bool OpenSqlConnection(SqlConnection conn) //Функцйия открытия соединения к БД
         //{
