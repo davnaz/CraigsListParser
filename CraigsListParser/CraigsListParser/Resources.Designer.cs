@@ -79,6 +79,15 @@ namespace CraigsListParser {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на AddOrUpdateOffer.
+        /// </summary>
+        internal static string InsertOrUpdateOfferStoredProcedure {
+            get {
+                return ResourceManager.GetString("InsertOrUpdateOfferStoredProcedure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на https://losangeles.craigslist.org/search/apa.
         /// </summary>
         internal static string MainLink {

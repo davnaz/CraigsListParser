@@ -82,7 +82,8 @@ namespace CraigsListParser
 
         private static void InsertIntoDB(Offer o)
         {
-            
+            SqlCommand insertOfferCommand = DataProviders.DataProvider.Instance.CreateSQLCommandForInsertSP();
+            insertOfferCommand.Connection = DataProvider.Instance.ExecureSP
         }
 
         private static Offer ParseOffer(IHtmlDocument htmlDocument) //парсит документ DOM конкретного предложения жилья

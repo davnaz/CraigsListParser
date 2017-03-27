@@ -243,7 +243,17 @@ namespace CraigsListParser
             }
         }
 
-        public string Additional { get => OfferAdditional; set => OfferAdditional = value; }
+        public string Additional {
+            get
+            {
+                return OfferAdditional;
+            }
+
+            set
+            {
+                OfferAdditional = value;
+            }
+        }
 
         public bool SetImages(List<string> imagesList)
         {

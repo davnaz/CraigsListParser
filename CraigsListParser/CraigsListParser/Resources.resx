@@ -125,6 +125,10 @@
     <value>Data Source=NOTEBOOK;Initial Catalog=CraigsList;Integrated Security=True</value>
     <comment>Эта строка нужна для подключения к БД CraigsList на Текущем компьютере NOTEBOOK</comment>
   </data>
+  <data name="InsertOrUpdateOfferStoredProcedure" xml:space="preserve">
+    <value>AddOrUpdateOffer</value>
+    <comment>Название Процедуры добавления или изменения предложения в БД</comment>
+  </data>
   <data name="MainLink" xml:space="preserve">
     <value>https://losangeles.craigslist.org/search/apa</value>
     <comment>Начальная страница для парсинга</comment>

@@ -89,9 +89,9 @@ namespace CraigsListParser.DataProviders
         /// <param name="spName">name of the stored procedure</param>
         /// <returns>SQL command</returns>
         /// <remarks></remarks>
-        public SqlCommand CreateSQLCommandForSP(string spName)
+        public SqlCommand CreateSQLCommandForInsertSP()
         {
-            SqlCommand command = new SqlCommand(spName, new SqlConnection(Resources.DbConnectionString));
+            SqlCommand command = new SqlCommand(Resources.InsertOrUpdateOfferStoredProcedure, new SqlConnection(Resources.DbConnectionString));
             command.CommandType = CommandType.StoredProcedure;
             // command.Connection.Open();
             return command;
