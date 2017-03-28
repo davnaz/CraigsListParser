@@ -61,6 +61,15 @@ namespace CraigsListParser {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на /search/aap.
+        /// </summary>
+        internal static string AltHouseSearchLinkPostfix {
+            get {
+                return ResourceManager.GetString("AltHouseSearchLinkPostfix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на https://losangeles.craigslist.org.
         /// </summary>
         internal static string BaseLink {
@@ -79,6 +88,15 @@ namespace CraigsListParser {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на /search/apa.
+        /// </summary>
+        internal static string HouseSearchLinkPostfix {
+            get {
+                return ResourceManager.GetString("HouseSearchLinkPostfix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на AddOrUpdateOffer.
         /// </summary>
         internal static string InsertOrUpdateOfferStoredProcedure {
@@ -93,6 +111,15 @@ namespace CraigsListParser {
         internal static string MainLink {
             get {
                 return ResourceManager.GetString("MainLink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на https://geo.craigslist.org/iso/us.
+        /// </summary>
+        internal static string StartLink {
+            get {
+                return ResourceManager.GetString("StartLink", resourceCulture);
             }
         }
     }

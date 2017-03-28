@@ -5,6 +5,7 @@ namespace CraigsListParser
 {
     internal class Offer
     {
+        private string OfferCity;
         private long OfferID;
         private string OfferName;
         private double OfferPrice;
@@ -22,24 +23,27 @@ namespace CraigsListParser
 
         public Offer(long Id, string Name)
         {
+            OfferCity = " ";
             OfferID = Id;
             OfferName = Name;
             OfferPrice = 0;
-            OfferPlaceName = null;
-            OfferPlaceMapsLink = null;
-            OfferDescription = null;
-            OfferBedRooms = null;
-            OfferBathRooms = null;
+            OfferPlaceName = "No";
+            OfferPlaceMapsLink = "No";
+            OfferDescription = "No";
+            OfferBedRooms = "No";
+            OfferBathRooms = "No";
             OfferSquare = 0;
-            OfferAvailability = null;
-            OfferImages = null;
-            OfferAdditional = null;
+            OfferAvailability = "Undefined";
+            OfferImages = "No Images";
+            OfferAdditional = "No additional info";
             OfferPosted = DateTime.MinValue;
             OfferUpdated = DateTime.MinValue;
+
         }
 
         public Offer(Offer a)
         {
+            OfferCity = a.OfferCity;
             OfferID = a.OfferID;
             OfferName = a.OfferName;
             OfferPrice = a.OfferPrice;
@@ -58,23 +62,24 @@ namespace CraigsListParser
 
         public Offer()
         {
+            OfferCity = " ";
             OfferID = 0;
-            OfferName = "";
+            OfferName = "Untitled";
             OfferPrice = 0;
-            OfferPlaceName = null;
-            OfferPlaceMapsLink = null;
-            OfferDescription = null;
-            OfferBedRooms = null;
-            OfferBathRooms = null;
+            OfferPlaceName = "No";
+            OfferPlaceMapsLink = "No";
+            OfferDescription = "No";
+            OfferBedRooms = "No";
+            OfferBathRooms = "No";
             OfferSquare = 0;
-            OfferAvailability = null;
-            OfferImages = null;
-            OfferAdditional = null;
+            OfferAvailability = "Undefined";
+            OfferImages = "No Images";
+            OfferAdditional = "No additional info";
             OfferPosted = DateTime.MinValue;
             OfferUpdated = DateTime.MinValue;
         }
 
-        public long ID
+        public long PostID
         {
             get
             {
@@ -252,6 +257,19 @@ namespace CraigsListParser
             set
             {
                 OfferAdditional = value;
+            }
+        }
+
+        public string City
+        {
+            get
+            {
+                return OfferCity;
+            }
+
+            set
+            {
+                OfferCity = value;
             }
         }
 

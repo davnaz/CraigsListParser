@@ -16,22 +16,40 @@ namespace CraigsListParser
 {
     class Program
     {
-        //private static string mainLink = "https://losangeles.craigslist.org/search/apa"; //start link for parsing
-        //private static string craigslistBaselink = "https://losangeles.craigslist.org"; //craigslist
-        //private static string dbConnectionString = "Data Source=NOTEBOOK;Initial Catalog=CraigsList;Integrated Security=True"; //string for database with Offers
-        private static Uri craigslistUri = new Uri(Resources.BaseLink); //необходимое зло
         private static HtmlParser parser; //один для всех страниц экземпляр парсера
-        SqlConnection dbConnection = DataProvider.Instance.Connection;  //переменная подключения к БД
-
+        
         static void Main(string[] args)
         {
             Init(out parser);
-            StartParsing();
+            List<string> citiesList = new List<string>();
+            var citiesLinksDomElement = parser.Parse(GetHtml(Resources.StartLink)).QuerySelectorAll(".height6.geo-site-list li > a");
+            foreach(var link in citiesLinksDomElement)
+            {
+                citiesList.Add(link.GetAttribute(Constants.WebAttrsNames.href));
+            }
+            for(int i = 0; i< citiesList.Count;i++)
+            {
+                if(citiesList[i] == "https://evansville.craigslist.org")
+                {
+                    citiesList.RemoveRange(0, i);
+                    break;
+                }
+            }
+            foreach (string link in citiesList)
+            {
+                StartParsing(link);
+            }
+            //StartParsing("https://boston.craigslist.org");
         }
 
-        private static void StartParsing()
+        private static void StartParsing(string regionLink)
         {
-            var searchPageDOM = parser.Parse(GetHtml(Resources.MainLink)); //получаем стартовую страницу выдачи нужных предложений.
+            string searchPageInline = GetHtml(regionLink + Resources.HouseSearchLinkPostfix); //парсим обычным образом
+            if(searchPageInline == Constants.WebAttrsNames.NotFound)                                                      //, а если не получится, пробуем по другому постфиксу(для некоторых регионов
+            {
+                searchPageInline = GetHtml(regionLink + Resources.AltHouseSearchLinkPostfix);
+            }
+            var searchPageDOM = parser.Parse(searchPageInline); //получаем стартовую страницу выдачи нужных предложений.
             AngleSharp.Dom.IElement searchResultNextPageLink = null;
             try
             {
@@ -43,21 +61,43 @@ namespace CraigsListParser
             }
             if (searchResultNextPageLink != null)
             {
+                string oldSearchResultNextPageLinkstring = "";
                 do
                 {
-                    Console.WriteLine("Начинаем парсить страницу выдачи: {0}{1}", Resources.BaseLink, searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href));
+                    Console.WriteLine("Начинаем парсить страницу выдачи: {0}{1}", regionLink, searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href));
 
 
-                    ParseOffersListPage(searchPageDOM); //парсим предложения этой страницы
+                    //ParseOffersListPage(searchPageDOM, regionLink); //парсим предложения этой страницы
 
 
                     Console.WriteLine("Спарсили текущую страницу выдачи!");
 
-                    var offersListPageHtmlDocument = parser.Parse(GetHtml(Resources.BaseLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));  //получаем DOM-документ одной страницы выдачи предложений
+                    var offersListPageHtmlDocument = parser.Parse(GetHtml(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));  //получаем DOM-документ одной страницы выдачи предложений
+                    
+                    searchResultNextPageLink = offersListPageHtmlDocument.QuerySelector("a.button.next"); //берем элемент со ссылкой на следующую страницу
+                    if(searchResultNextPageLink == null)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        if (searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) == oldSearchResultNextPageLinkstring) //проверяем, а не ушли ли мы в цикл
+                        {
+                            break; //если мы в цикле, тогда хватит парсить ту же страницу  до бесконечности
+                        }
+                        else
+                        {
 
-                    searchResultNextPageLink = offersListPageHtmlDocument.QuerySelector("a.button.next");
-                    Console.WriteLine(searchResultNextPageLink != null ? "Получено:" + Resources.BaseLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) : "На этой странице нет результатов и ссылок на следующую страницу!");
-                    searchPageDOM = parser.Parse(GetHtml(Resources.BaseLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));
+                            oldSearchResultNextPageLinkstring = searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href); //новая ссылка для будущих итераций
+                        }
+                    }
+                    
+                    
+                    Console.WriteLine(searchResultNextPageLink != null ? "Получено:" + regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) : "На этой странице нет результатов и ссылок на следующую страницу!");
+                    if(searchResultNextPageLink != null)
+                    {
+                        searchPageDOM = parser.Parse(GetHtml(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));
+                    }
                     Console.WriteLine("------------------------------------------");
 
                 } while (searchResultNextPageLink != null);
@@ -66,31 +106,69 @@ namespace CraigsListParser
             {
                 Console.WriteLine("Nothing to parse");
             }
-
-            Console.ReadKey();
+            Console.WriteLine("Регион " + regionLink + "готов!");
+            //Console.ReadKey();
         }
 
-        private static void ParseOffersListPage(IHtmlDocument searchPageDOM)
+        private static void ParseOffersListPage(IHtmlDocument searchPageDOM,string regionLink)
         {
             var links = searchPageDOM.QuerySelectorAll(".result-title.hdrlnk");
             for(int i = 0;i< links.Length;i++)
             {
-                Offer o = ParseOffer(parser.Parse(GetHtml(Resources.BaseLink + links[i].GetAttribute(Constants.WebAttrsNames.href)))); //теперь парсим каждую отдельную ссылку(предложение)
+                Offer o = ParseOffer(parser.Parse(GetHtml(regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href)))); //теперь парсим каждую отдельную ссылку(предложение)
+                //Print(o);
                 InsertIntoDB(o);//запихиваем предложение в БД                
             }
         }
 
+        private static void Print(Offer o)
+        {
+            Console.WriteLine("City: " + o.City);
+            Console.WriteLine("ID); "+o.PostID);
+            Console.WriteLine("Name); "+o.Name);
+            Console.WriteLine("Price); "+o.Price);
+            Console.WriteLine("PlaceName); "+o.PlaceName);
+            Console.WriteLine("PlaceMapsLink); "+o.PlaceMapsLink);
+            Console.WriteLine("Description); "+o.Description);
+            Console.WriteLine("BathRooms); "+o.BathRooms);
+            Console.WriteLine("BedRooms); "+o.BedRooms);
+            Console.WriteLine("Square); "+o.Square);
+            Console.WriteLine("Availability); "+o.Availability);
+            Console.WriteLine("Additional); "+o.Additional);
+            Console.WriteLine("Images); "+o.Images);
+            Console.WriteLine("Posted); "+o.Posted);
+            Console.WriteLine("Updated); " + o.Updated);            
+        }
+
         private static void InsertIntoDB(Offer o)
         {
-            SqlCommand insertOfferCommand = DataProviders.DataProvider.Instance.CreateSQLCommandForInsertSP();
-            insertOfferCommand.Connection = DataProvider.Instance.ExecureSP
+            SqlCommand insertOfferCommand = DataProvider.Instance.CreateSQLCommandForInsertSP();
+            insertOfferCommand.Connection = DataProvider.Instance.Connection;
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.City,o.City);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.PostID, o.PostID);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Name, o.Name);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Price, o.Price);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.PlaceName, o.PlaceName);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Description, o.Description);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Posted, o.Posted);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Updated, o.Updated);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.PlaceMapsLink, o.PlaceMapsLink);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Availability, o.Availability);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.BedRooms, o.BedRooms);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.BathRooms, o.BathRooms);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Square, o.Square);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Additional, o.Additional);
+            insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Images, o.Images);
+            DataProvider.Instance.ExecureSP(insertOfferCommand);
         }
+
+
 
         private static Offer ParseOffer(IHtmlDocument htmlDocument) //парсит документ DOM конкретного предложения жилья
         {
             Offer o = new Offer();           
             
-            o.ID = GetID(htmlDocument);
+            o.PostID = GetID(htmlDocument);
             o.Name = GetOfferName(htmlDocument);
             o.Description = GetDescription(htmlDocument);
             o.Price = getPrice(htmlDocument);
@@ -100,9 +178,15 @@ namespace CraigsListParser
             o.Posted = getPosted(htmlDocument);
             o.Updated = getUpdated(htmlDocument);
             o.Images = getImages(htmlDocument);
+            o.City = getCity(htmlDocument);
 
             Console.WriteLine("Предложение {0} спарсили!", htmlDocument.QuerySelector("link").GetAttribute("href"));
-            return null;
+            return o;
+        }
+
+        private static string getCity(IHtmlDocument htmlDocument)
+        {
+            return htmlDocument.QuerySelector(Constants.OfferSelectorNames.City) != null ? htmlDocument.QuerySelector(Constants.OfferSelectorNames.City).TextContent : "No City"; //если на странице есть цена, возвращаем, иначе возвращаем 0
         }
 
         private static string getImages(IHtmlDocument htmlDocument)
@@ -138,7 +222,12 @@ namespace CraigsListParser
 
         private static string GetDescription(IHtmlDocument htmlDocument)
         {
-            return htmlDocument.QuerySelector("#postingbody") != null ? htmlDocument.QuerySelector("#postingbody").TextContent : "There is no Description"; //если на странице есть описание, возвращаем, иначе возвращаем "There is no Description"
+            string Description = "There is no Description";
+            if (htmlDocument.QuerySelector("#postingbody") != null)
+            {
+                Description = htmlDocument.QuerySelector("#postingbody").TextContent.Replace("QR Code Link to This Post","").TrimStart(new char[] {'\n', ' '});
+            }
+            return Description;  //если на странице есть описание, возвращаем, иначе возвращаем "There is no Description"
         }
 
         private static double getPrice(IHtmlDocument htmlDocument)
@@ -149,7 +238,7 @@ namespace CraigsListParser
         private static void setProperties(IHtmlDocument htmlDocument, Offer o)
         {
             var infocollection = htmlDocument.QuerySelectorAll("p.attrgroup");
-            if (infocollection != null)
+            if (infocollection != null && infocollection.Length != 0)
             {
                 var firstLineProperties = infocollection[0];
 
@@ -235,20 +324,27 @@ namespace CraigsListParser
             //    req.CookieContainer = cookies; //самый важный пункт: сюда добавляем печеньку с идентификатором авторизации
             //}
             req.AllowAutoRedirect = true;
-            HttpWebResponse res = (HttpWebResponse)req.GetResponse();
-            System.IO.Stream ReceiveStream = res.GetResponseStream();
-            System.IO.StreamReader sr2 = new System.IO.StreamReader(ReceiveStream, Encoding.UTF8);
-            //Кодировка указывается в зависимости от кодировки ответа сервера
-            Char[] read = new Char[256];
-            int count = sr2.Read(read, 0, 256);
-            string htmlString = String.Empty;
-            while (count > 0)
+            try
             {
-                String str = new String(read, 0, count);
-                htmlString += str;
-                count = sr2.Read(read, 0, 256);
+                HttpWebResponse res = (HttpWebResponse)req.GetResponse();
+                System.IO.Stream ReceiveStream = res.GetResponseStream();
+                System.IO.StreamReader sr2 = new System.IO.StreamReader(ReceiveStream, Encoding.UTF8);
+                //Кодировка указывается в зависимости от кодировки ответа сервера
+                Char[] read = new Char[256];
+                int count = sr2.Read(read, 0, 256);
+                string htmlString = String.Empty;
+                while (count > 0)
+                {
+                    String str = new String(read, 0, count);
+                    htmlString += str;
+                    count = sr2.Read(read, 0, 256);
+                }
+                return htmlString;
             }
-            return htmlString;
+            catch
+            {
+                return Constants.WebAttrsNames.NotFound;
+            }
         }
 
         private static void Init(out HtmlParser parser)
@@ -258,20 +354,5 @@ namespace CraigsListParser
             //cookies = new CookieContainer();
         }		
 
-
-        //private static bool OpenSqlConnection(SqlConnection conn) //Функцйия открытия соединения к БД
-        //{
-        //    try
-        //    {
-        //        if (conn.State == System.Data.ConnectionState.Open) conn.Close();
-        //        conn.Open(); // Открыть
-        //        return true;
-        //    }
-        //    catch (Exception ex) // Исключение
-        //    {
-        //        Console.WriteLine(ex.Message);
-        //        return false;
-        //    }
-        //}
     }
 }

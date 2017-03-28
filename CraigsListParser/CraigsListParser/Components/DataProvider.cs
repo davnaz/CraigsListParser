@@ -70,12 +70,8 @@ namespace CraigsListParser.DataProviders
             }           
         }
 
-        /// <summary>
-        /// Returns DataSet
-        /// </summary>
-        /// <param name="command">Command for database.</param>      
-        ///<returns>The DataSet object.</returns> 
-        
+
+
 
 
 

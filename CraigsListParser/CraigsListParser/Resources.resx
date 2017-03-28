@@ -117,6 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AltHouseSearchLinkPostfix" xml:space="preserve">
+    <value>/search/aap</value>
+    <comment>Альтернативный Постфикс для ссылки региона, который будем парсить</comment>
+  </data>
   <data name="BaseLink" xml:space="preserve">
     <value>https://losangeles.craigslist.org</value>
     <comment>Базовая страница для адресов страниц, которые нуно парсить</comment>
@@ -125,6 +129,10 @@
     <value>Data Source=NOTEBOOK;Initial Catalog=CraigsList;Integrated Security=True</value>
     <comment>Эта строка нужна для подключения к БД CraigsList на Текущем компьютере NOTEBOOK</comment>
   </data>
+  <data name="HouseSearchLinkPostfix" xml:space="preserve">
+    <value>/search/apa</value>
+    <comment>Постфикс для ссылки региона, который будем парсить</comment>
+  </data>
   <data name="InsertOrUpdateOfferStoredProcedure" xml:space="preserve">
     <value>AddOrUpdateOffer</value>
     <comment>Название Процедуры добавления или изменения предложения в БД</comment>
@@ -132,5 +140,9 @@
   <data name="MainLink" xml:space="preserve">
     <value>https://losangeles.craigslist.org/search/apa</value>
     <comment>Начальная страница для парсинга</comment>
+  </data>
+  <data name="StartLink" xml:space="preserve">
+    <value>https://geo.craigslist.org/iso/us</value>
+    <comment>Указаны все регионы, в которых могут быть предложения </comment>
   </data>
 </root>
