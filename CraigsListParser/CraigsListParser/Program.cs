@@ -27,14 +27,14 @@ namespace CraigsListParser
             {
                 citiesList.Add(link.GetAttribute(Constants.WebAttrsNames.href));
             }
-            for(int i = 0; i< citiesList.Count;i++)
-            {
-                if(citiesList[i] == "https://evansville.craigslist.org")
-                {
-                    citiesList.RemoveRange(0, i);
-                    break;
-                }
-            }
+            //for(int i = 0; i< citiesList.Count;i++)
+            //{
+            //    if(citiesList[i] == "https://evansville.craigslist.org")
+            //    {
+            //        citiesList.RemoveRange(0, i);
+            //        break;
+            //    }
+            //}
             foreach (string link in citiesList)
             {
                 StartParsing(link);
@@ -61,13 +61,13 @@ namespace CraigsListParser
             }
             if (searchResultNextPageLink != null)
             {
-                string oldSearchResultNextPageLinkstring = "";
+                string oldSearchResultNextPageLinkstring = "=";
                 do
                 {
                     Console.WriteLine("Начинаем парсить страницу выдачи: {0}{1}", regionLink, searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href));
 
 
-                    //ParseOffersListPage(searchPageDOM, regionLink); //парсим предложения этой страницы
+                    ParseOffersListPage(searchPageDOM, regionLink); //парсим предложения этой страницы
 
 
                     Console.WriteLine("Спарсили текущую страницу выдачи!");
@@ -81,7 +81,7 @@ namespace CraigsListParser
                     }
                     else
                     {
-                        if (searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) == oldSearchResultNextPageLinkstring) //проверяем, а не ушли ли мы в цикл
+                        if (WrongLink(searchResultNextPageLink, oldSearchResultNextPageLinkstring)) //проверяем, а не ушли ли мы в цикл
                         {
                             break; //если мы в цикле, тогда хватит парсить ту же страницу  до бесконечности
                         }
@@ -91,8 +91,8 @@ namespace CraigsListParser
                             oldSearchResultNextPageLinkstring = searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href); //новая ссылка для будущих итераций
                         }
                     }
-                    
-                    
+
+
                     Console.WriteLine(searchResultNextPageLink != null ? "Получено:" + regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) : "На этой странице нет результатов и ссылок на следующую страницу!");
                     if(searchResultNextPageLink != null)
                     {
@@ -108,6 +108,32 @@ namespace CraigsListParser
             }
             Console.WriteLine("Регион " + regionLink + "готов!");
             //Console.ReadKey();
+        }
+
+        private static bool WrongLink(IElement searchResultNextPageLink, string oldSearchResultNextPageLinkstring)
+        {
+            string newLink = searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href);
+            try
+            {
+                int newLinknum = Convert.ToInt32(newLink.Split('=')[newLink.Split('=').Length - 1]);
+                int oldLinkNum = Convert.ToInt32(oldSearchResultNextPageLinkstring.Split('=')[oldSearchResultNextPageLinkstring.Split('=').Length - 1]);
+            }
+            catch
+            {
+                return false;
+            }
+            if (newLink == oldSearchResultNextPageLinkstring)
+            {
+                return true;
+            }
+            else
+            {
+                if (Convert.ToInt32(newLink.Split('=')[newLink.Split('=').Length - 1]) < Convert.ToInt32(oldSearchResultNextPageLinkstring.Split('=')[oldSearchResultNextPageLinkstring.Split('=').Length - 1]))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static void ParseOffersListPage(IHtmlDocument searchPageDOM,string regionLink)
