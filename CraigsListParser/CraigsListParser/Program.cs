@@ -27,14 +27,14 @@ namespace CraigsListParser
             {
                 citiesList.Add(link.GetAttribute(Constants.WebAttrsNames.href));
             }
-            //for(int i = 0; i< citiesList.Count;i++)
-            //{
-            //    if(citiesList[i] == "https://evansville.craigslist.org")
-            //    {
-            //        citiesList.RemoveRange(0, i);
-            //        break;
-            //    }
-            //}
+            for(int i = 0; i< citiesList.Count;i++)
+            {
+                if(citiesList[i] == "https://bend.craigslist.org")
+                {
+                    citiesList.RemoveRange(0, i);
+                    break;
+                }
+            }
             foreach (string link in citiesList)
             {
                 StartParsing(link);
@@ -311,13 +311,13 @@ namespace CraigsListParser
         {
             var a = htmlDocument.QuerySelector(Constants.OfferSelectorNames.Posted);
             
-            return a != null ? Convert.ToDateTime(a.TextContent) : DateTime.MinValue;
+            return a != null ? Convert.ToDateTime(a.TextContent) : DateTime.MinValue.AddYears(1800);  //добавляем 1800 лет для 0001 года, т.к. MS SQL не умеет работать с датами раньше 1753 года
         }
 
         private static DateTime getUpdated(IHtmlDocument htmlDocument) //получает дату размещения публикации, если дата обновления есть, тогда парсим, иначе берем из Posted
         {
             var postingInfos = htmlDocument.QuerySelectorAll(Constants.OfferSelectorNames.Updated);
-            DateTime Updated = DateTime.MinValue;
+            DateTime Updated = DateTime.MinValue.AddYears(1800);
             if (postingInfos != null)
             {
                 foreach (var info in postingInfos)
@@ -328,7 +328,7 @@ namespace CraigsListParser
                     }
                 }
             }
-            if (Updated == DateTime.MinValue)
+            if (Updated == DateTime.MinValue.AddYears(1800))
             {
                 Updated = getPosted(htmlDocument);
             }
