@@ -143,7 +143,10 @@ namespace CraigsListParser
             {
                 Offer o = ParseOffer(parser.Parse(GetHtml(regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href)))); //теперь парсим каждую отдельную ссылку(предложение)
                 //Print(o);
-                InsertIntoDB(o);//запихиваем предложение в БД                
+                if (o != null)
+                {
+                    InsertIntoDB(o);//запихиваем предложение в БД  
+                }
             }
         }
 
@@ -205,9 +208,16 @@ namespace CraigsListParser
             o.Updated = getUpdated(htmlDocument);
             o.Images = getImages(htmlDocument);
             o.City = getCity(htmlDocument);
-
-            Console.WriteLine("Предложение {0} спарсили!", htmlDocument.QuerySelector("link").GetAttribute("href"));
-            return o;
+            if(htmlDocument.QuerySelector("link") == null)
+            {
+                Console.WriteLine("Ссылка битая!");
+                return null;
+            }
+            else
+            {
+                Console.WriteLine("Предложение {0} спарсили!", htmlDocument.QuerySelector("link").GetAttribute("href"));
+                return o;
+            }            
         }
 
         private static string getCity(IHtmlDocument htmlDocument)
