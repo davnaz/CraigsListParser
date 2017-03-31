@@ -27,9 +27,20 @@ namespace CraigsListParser
             {
                 citiesList.Add(link.GetAttribute(Constants.WebAttrsNames.href));
             }
+            string beginlink = "";
+            try
+            {
+
+                beginlink = File.ReadAllText("last.txt");
+                
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Файла с последней спарсенной ссылкой нет, начинаем с начала списка.  "+ e.Message);
+            }
             for(int i = 0; i< citiesList.Count;i++)
             {
-                if(citiesList[i] == "https://bend.craigslist.org")
+                if(citiesList[i] == beginlink)
                 {
                     citiesList.RemoveRange(0, i);
                     break;
@@ -37,9 +48,10 @@ namespace CraigsListParser
             }
             foreach (string link in citiesList)
             {
+                File.WriteAllText("last.txt", link);//записываем ссылку для того, чтобы после перезапуска программы стартовали с этой же ссылки
                 StartParsing(link);
             }
-            //StartParsing("https://boston.craigslist.org");
+            //StartParsing("https://flint.craigslist.org");
         }
 
         private static void StartParsing(string regionLink)
@@ -138,6 +150,25 @@ namespace CraigsListParser
 
         private static void ParseOffersListPage(IHtmlDocument searchPageDOM,string regionLink)
         {
+            SqlCommand insertOfferCommand = DataProvider.Instance.CreateSQLCommandForInsertSP();
+            
+            insertOfferCommand.Connection = DataProvider.Instance.Connection;
+            insertOfferCommand.Connection.Open();
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.City, "No city");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.PostID, 0);
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Name, "No Name");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Price, 0);
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.PlaceName, "No place Name");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Description, " ");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Posted, DateTime.MinValue.AddYears(1800);
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Updated, DateTime.MinValue.AddYears(1800));
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.PlaceMapsLink, "No map link");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Availability, "Not availible");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.BedRooms, "0");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.BathRooms, "0");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Square, 0);
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Additional, "No info");
+            //insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Images, "[]");
             var links = searchPageDOM.QuerySelectorAll(".result-title.hdrlnk");
             for(int i = 0;i< links.Length;i++)
             {
@@ -145,9 +176,10 @@ namespace CraigsListParser
                 //Print(o);
                 if (o != null)
                 {
-                    InsertIntoDB(o);//запихиваем предложение в БД  
+                    InsertIntoDB(o,insertOfferCommand);//запихиваем предложение в БД  
                 }
             }
+            insertOfferCommand.Connection.Close();
         }
 
         private static void Print(Offer o)
@@ -169,10 +201,11 @@ namespace CraigsListParser
             Console.WriteLine("Updated); " + o.Updated);            
         }
 
-        private static void InsertIntoDB(Offer o)
+        private static void InsertIntoDB(Offer o,SqlCommand insertOfferCommand)
         {
-            SqlCommand insertOfferCommand = DataProvider.Instance.CreateSQLCommandForInsertSP();
-            insertOfferCommand.Connection = DataProvider.Instance.Connection;
+            
+            //insertOfferCommand.Connection = DataProvider.Instance.Connection;
+            insertOfferCommand.Parameters.Clear();
             insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.City,o.City);
             insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.PostID, o.PostID);
             insertOfferCommand.Parameters.AddWithValue(Constants.DbCellNames.Name, o.Name);
