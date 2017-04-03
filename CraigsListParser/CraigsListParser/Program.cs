@@ -117,8 +117,10 @@ namespace CraigsListParser
             else
             {
                 Console.WriteLine("Nothing to parse");
+                File.AppendAllText("log.txt", String.Format("Регион не спарсился или там нет предложений жилья: {0}, {1}\n", regionLink, DateTime.Now)); //если не спарсилось, заносим в лог
             }
-            Console.WriteLine("Регион " + regionLink + "готов!");
+            Console.WriteLine("Регион " + regionLink + "обработан!");
+            File.AppendAllText("log.txt", String.Format("Регион спарсился: {0}, {1}\n", regionLink, DateTime.Now));
             //Console.ReadKey();
         }
 
@@ -177,6 +179,10 @@ namespace CraigsListParser
                 if (o != null)
                 {
                     InsertIntoDB(o,insertOfferCommand);//запихиваем предложение в БД  
+                }
+                else
+                {
+                    File.AppendAllText("log.txt",String.Format("Не спарсилось: {0},{1}\n",regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href),DateTime.Now)); //если не спарсилось, заносим в лог
                 }
             }
             insertOfferCommand.Connection.Close();
