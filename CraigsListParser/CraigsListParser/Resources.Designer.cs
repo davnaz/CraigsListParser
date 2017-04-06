@@ -115,6 +115,15 @@ namespace CraigsListParser {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на 400.
+        /// </summary>
+        internal static string MaxProxyPing {
+            get {
+                return ResourceManager.GetString("MaxProxyPing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на https://geo.craigslist.org/iso/us.
         /// </summary>
         internal static string StartLink {

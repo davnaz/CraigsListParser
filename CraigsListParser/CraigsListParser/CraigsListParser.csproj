@@ -54,7 +54,9 @@
   <ItemGroup>
     <Compile Include="Components\Constants.cs" />
     <Compile Include="Components\DataProvider.cs" />
+    <Compile Include="Components\ProxySolver.cs" />
     <Compile Include="Components\SingleTone.cs" />
+    <Compile Include="Components\WebHelpers.cs" />
     <Compile Include="Offer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

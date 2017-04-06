@@ -1,5 +1,5 @@
 ﻿
-namespace CraigsListParser.Helpers
+namespace CraigsListParser.Components
 {    
     public class SingleTone<T> where T : class, new()
     {

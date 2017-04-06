@@ -3,27 +3,61 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
 using CraigsListParser.DataProviders;
-using CraigsListParser.Components;
 using AngleSharp.Dom.Html;
 using AngleSharp.Dom;
+using System.Threading;
+using System.Net.NetworkInformation;
+using CraigsListParser.Components;
 
 namespace CraigsListParser
 {
     class Program
     {
         private static HtmlParser parser; //один для всех страниц экземпляр парсера
-        
+        private static List<WebProxy> proxies;
+        private static WebProxy currentProxy;
+
+
         static void Main(string[] args)
         {
             Init(out parser);
             List<string> citiesList = new List<string>();
-            var citiesLinksDomElement = parser.Parse(GetHtml(Resources.StartLink)).QuerySelectorAll(".height6.geo-site-list li > a");
-            foreach(var link in citiesLinksDomElement)
+            proxies = getProxyList();
+            //GetRegionsList(citiesList);
+            while (proxies.Count != 0)
+            {
+                currentProxy = getNewProxy(proxies);
+                
+                WebHelpers.ProxyPing(currentProxy);
+                
+            }
+
+            
+            foreach (string link in citiesList)
+            {
+                File.WriteAllText("last.txt", link);//записываем ссылку для того, чтобы после перезапуска программы стартовали с этой же ссылки
+                StartParsing(link);
+            }
+           
+        }
+
+        private static WebProxy getNewProxy(List<WebProxy> proxies)
+        {
+            WebProxy proxy = new WebProxy();
+            proxy = proxies[0];
+            proxies.RemoveAt(0);
+            return proxy;
+        }
+
+
+
+        private static void GetRegionsList(List<string> citiesList)
+        {
+            var citiesLinksDomElement = parser.Parse(WebHelpers.GetHtml(Resources.StartLink)).QuerySelectorAll(".height6.geo-site-list li > a");
+            foreach (var link in citiesLinksDomElement)
             {
                 citiesList.Add(link.GetAttribute(Constants.WebAttrsNames.href));
             }
@@ -32,34 +66,28 @@ namespace CraigsListParser
             {
 
                 beginlink = File.ReadAllText("last.txt");
-                
+
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                Console.WriteLine("Файла с последней спарсенной ссылкой нет, начинаем с начала списка.  "+ e.Message);
+                Console.WriteLine("Файла с последней спарсенной ссылкой нет, начинаем с начала списка.  " + e.Message);
             }
-            for(int i = 0; i< citiesList.Count;i++)
+            for (int i = 0; i < citiesList.Count; i++)
             {
-                if(citiesList[i] == beginlink)
+                if (citiesList[i] == beginlink)
                 {
                     citiesList.RemoveRange(0, i);
                     break;
                 }
             }
-            foreach (string link in citiesList)
-            {
-                File.WriteAllText("last.txt", link);//записываем ссылку для того, чтобы после перезапуска программы стартовали с этой же ссылки
-                StartParsing(link);
-            }
-            //StartParsing("https://flint.craigslist.org");
         }
 
         private static void StartParsing(string regionLink)
         {
-            string searchPageInline = GetHtml(regionLink + Resources.HouseSearchLinkPostfix); //парсим обычным образом
+            string searchPageInline = WebHelpers.GetHtml(regionLink + Resources.HouseSearchLinkPostfix); //парсим обычным образом
             if(searchPageInline == Constants.WebAttrsNames.NotFound)                                                      //, а если не получится, пробуем по другому постфиксу(для некоторых регионов
             {
-                searchPageInline = GetHtml(regionLink + Resources.AltHouseSearchLinkPostfix);
+                searchPageInline = WebHelpers.GetHtml(regionLink + Resources.AltHouseSearchLinkPostfix);
             }
             var searchPageDOM = parser.Parse(searchPageInline); //получаем стартовую страницу выдачи нужных предложений.
             AngleSharp.Dom.IElement searchResultNextPageLink = null;
@@ -84,7 +112,7 @@ namespace CraigsListParser
 
                     Console.WriteLine("Спарсили текущую страницу выдачи!");
 
-                    var offersListPageHtmlDocument = parser.Parse(GetHtml(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));  //получаем DOM-документ одной страницы выдачи предложений
+                    var offersListPageHtmlDocument = parser.Parse(WebHelpers.GetHtml(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));  //получаем DOM-документ одной страницы выдачи предложений
                     
                     searchResultNextPageLink = offersListPageHtmlDocument.QuerySelector("a.button.next"); //берем элемент со ссылкой на следующую страницу
                     if(searchResultNextPageLink == null)
@@ -108,7 +136,7 @@ namespace CraigsListParser
                     Console.WriteLine(searchResultNextPageLink != null ? "Получено:" + regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) : "На этой странице нет результатов и ссылок на следующую страницу!");
                     if(searchResultNextPageLink != null)
                     {
-                        searchPageDOM = parser.Parse(GetHtml(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));
+                        searchPageDOM = parser.Parse(WebHelpers.GetHtml(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href)));
                     }
                     Console.WriteLine("------------------------------------------");
 
@@ -174,7 +202,7 @@ namespace CraigsListParser
             var links = searchPageDOM.QuerySelectorAll(".result-title.hdrlnk");
             for(int i = 0;i< links.Length;i++)
             {
-                Offer o = ParseOffer(parser.Parse(GetHtml(regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href)))); //теперь парсим каждую отдельную ссылку(предложение)
+                Offer o = ParseOffer(parser.Parse(WebHelpers.GetHtml(regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href)))); //теперь парсим каждую отдельную ссылку(предложение)
                 //Print(o);
                 if (o != null)
                 {
@@ -384,43 +412,48 @@ namespace CraigsListParser
             return Updated;
         }
 
-        private static string GetHtml(string link) //получаем страницу в виде строки, которую будем парсить
-        {
-            
-            HttpWebRequest req = (HttpWebRequest)WebRequest.Create(link);
-            req.Method = "GET";
-            req.Timeout = 100000;
-            req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
-            req.UserAgent = "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36";
-            req.KeepAlive = true;
-            //req.Host = "www.craigslist.com.au";
-            //if (cookies != null)
-            //{
-            //    req.CookieContainer = cookies; //самый важный пункт: сюда добавляем печеньку с идентификатором авторизации
-            //}
-            req.AllowAutoRedirect = true;
-            try
-            {
-                HttpWebResponse res = (HttpWebResponse)req.GetResponse();
-                System.IO.Stream ReceiveStream = res.GetResponseStream();
-                System.IO.StreamReader sr2 = new System.IO.StreamReader(ReceiveStream, Encoding.UTF8);
-                //Кодировка указывается в зависимости от кодировки ответа сервера
-                Char[] read = new Char[256];
-                int count = sr2.Read(read, 0, 256);
-                string htmlString = String.Empty;
-                while (count > 0)
-                {
-                    String str = new String(read, 0, count);
-                    htmlString += str;
-                    count = sr2.Read(read, 0, 256);
-                }
-                return htmlString;
-            }
-            catch
-            {
-                return Constants.WebAttrsNames.NotFound;
-            }
-        }
+        
+
+          //private static string GetHtml(string link) //получаем страницу в виде строки, которую будем парсить
+          //{
+          //    
+          //    HttpWebRequest req = (HttpWebRequest)WebRequest.Create(link);
+          //    req.Method = "GET";
+          //    req.Timeout = 2000;
+          //    req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8";
+          //    req.UserAgent = "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36";
+          //    req.KeepAlive = true;
+          //    req.Proxy = currentProxy;
+          //    //req.Host = "www.craigslist.com.au";
+          //    //if (cookies != null)
+          //    //{
+          //    //    req.CookieContainer = cookies; //самый важный пункт: сюда добавляем печеньку с идентификатором авторизации
+          //    //}
+          //    req.AllowAutoRedirect = true;
+          //    try
+          //    {
+          //        Console.WriteLine("Получаю страницу...");
+          //        HttpWebResponse res = (HttpWebResponse)req.GetResponse();
+          //        Console.WriteLine(res.StatusCode+" , "+(int)res.StatusCode);
+          //        System.IO.Stream ReceiveStream = res.GetResponseStream();
+          //        System.IO.StreamReader sr2 = new System.IO.StreamReader(ReceiveStream, Encoding.UTF8);
+          //        //Кодировка указывается в зависимости от кодировки ответа сервера
+          //        Char[] read = new Char[256];
+          //        int count = sr2.Read(read, 0, 256);
+          //        string htmlString = String.Empty;
+          //        while (count > 0)
+          //        {
+          //            String str = new String(read, 0, count);
+          //            htmlString += str;
+          //            count = sr2.Read(read, 0, 256);
+          //        }
+          //        return htmlString;
+          //    }
+          //    catch
+          //    {
+          //        return Constants.WebAttrsNames.NotFound;
+          //    }
+          //}
 
         private static void Init(out HtmlParser parser)
         {

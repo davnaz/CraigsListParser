@@ -2,7 +2,7 @@
 using System.Data.SqlClient;
 using System.Data;
 using System;
-using CraigsListParser.Helpers;
+using CraigsListParser.Components;
 using System.Data.Common;
 
 namespace CraigsListParser.DataProviders
@@ -150,6 +150,10 @@ namespace CraigsListParser.DataProviders
         {
             return string.Format("@{0}", parameterName);
         }
+
+
+        
+
 
         #endregion
 

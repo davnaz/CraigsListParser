@@ -141,6 +141,10 @@
     <value>https://losangeles.craigslist.org/search/apa</value>
     <comment>Начальная страница для парсинга</comment>
   </data>
+  <data name="MaxProxyPing" xml:space="preserve">
+    <value>400</value>
+    <comment>Максимальный пинг для используемых прокси</comment>
+  </data>
   <data name="StartLink" xml:space="preserve">
     <value>https://geo.craigslist.org/iso/us</value>
     <comment>Указаны все регионы, в которых могут быть предложения </comment>
