@@ -13,14 +13,19 @@ namespace CraigsListParser.Components
     public class ProxySolver: SingleTone<ProxySolver>
     {
         private List<WebProxy> proxyList; //при создании экземпляра класса этот список наполняется списком прокси
-        int currentProxy; //запоминает позицию последнего извлеченного прокси
+        private int currentProxyIndex; //запоминает позицию последнего извлеченного прокси
+
+ 
+
         public ProxySolver()
         {
             proxyList = new List<WebProxy>();
             StreamReader sr = null;
             try
             {
-                sr = new StreamReader("proxylist.txt");
+                Console.WriteLine("Открываю файл с проксилистом {0}",Resources.ProxyList);
+
+                sr = new StreamReader(Resources.ProxyList);
 
                 while (!sr.EndOfStream)
                     {
@@ -35,7 +40,7 @@ namespace CraigsListParser.Components
                         }
                     }
                 sr.Close();
-
+                Console.WriteLine("Получены прокси: {0}", proxyList.Count);
                 
             }
             catch
@@ -47,25 +52,39 @@ namespace CraigsListParser.Components
             {
                 sr.Dispose();
             }
-            currentProxy = -1;
+            currentProxyIndex = -1;
+
             //А теперь исключим непигнуемые прокси
+            Console.WriteLine("Проверяю прокси на доступность...");
             proxyList.RemoveAll(i => ExcludeProxyByPing(i));
-            for(int i = 0; i< proxyList.Count;i++)
+            Console.WriteLine("Отфильтрованы по пингу в {0}мс:",Resources.MaxProxyPing);
+            File.AppendAllText("log.txt", String.Format("Количество рабочий прокси на {1}: {0}\n", proxyList.Count, DateTime.Now));
+            proxyList.ForEach(i => Console.WriteLine(i.Address));
+            //Console.ReadKey();
+        }
+        /// <summary>
+        /// Получает текущий прокси. 
+        /// Если он не был ранее получен методом  getNewProxy(), то возвращает результат вызова getNewProxy()
+        /// </summary>
+        public WebProxy CurrentProxy {
+            get
             {
-                if(ExcludeProxyByPing(proxyList[i]))
-                {
-                    proxyList.RemoveAt(i);
-                    i--;
-                }
+                return currentProxyIndex != -1 ? proxyList[currentProxyIndex] : getNewProxy();
             }
         }
+
+
+        /// <summary>
+        /// Получает новый прокси из List'а типа System.Net.WebProxy сгенерированных прокси
+        /// </summary>
+        /// <returns>Значение типа System.Net.WebProxy из списка экземпляра класса ProxySolver</returns>
         public WebProxy getNewProxy() //берет из листа новый прокси
         {
             WebProxy proxy = new WebProxy();
-            if(currentProxy == -1)
+            if(currentProxyIndex == -1)
             {
                 proxy = proxyList[0];
-                currentProxy = 0;
+                currentProxyIndex = 0;
             }
             else
             {
@@ -77,18 +96,20 @@ namespace CraigsListParser.Components
 
         private int increaseProxyIndex() //приращивваем индекс текущего прокси
         {
-            if(currentProxy == proxyList.Count - 1) //если мы достигли конца списка
+            if(currentProxyIndex == proxyList.Count - 1) //если мы достигли конца списка
             {
-                currentProxy = 0;
+                currentProxyIndex = 0;
             }
             else
             {
-                currentProxy++;
+                currentProxyIndex++;
             }
-            return currentProxy;
+            return currentProxyIndex;
         }
+
         private bool ExcludeProxyByPing(WebProxy currentProxy)
         {
+            Console.Write("Прокси {0} проверяется...", currentProxy.Address);
             // Ping's the proxy server.
             Ping pingSender = new Ping();
 
@@ -96,6 +117,7 @@ namespace CraigsListParser.Components
 
             if (reply.Status != IPStatus.Success) //если сервак не пингуется, то адьё
             {
+                Console.WriteLine(" Не доступен!");
                 return true;
             }
             else
@@ -112,11 +134,13 @@ namespace CraigsListParser.Components
                 }
                 if(reply.RoundtripTime > maxPing) //если пинг сервака не соответсвует значению в Resources.resx, то говорим, что его не нужно  
                 {
-                    return false;
+                    Console.WriteLine(" Не годится по пингу: ({0})", reply.RoundtripTime);
+                    return true;
                 }
                 else
                 {
-                    return true;
+                    Console.WriteLine(" Годится!");
+                    return false;
                 }
             }
         }

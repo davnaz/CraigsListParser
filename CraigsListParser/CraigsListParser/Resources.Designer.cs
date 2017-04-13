@@ -124,6 +124,15 @@ namespace CraigsListParser {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на proxylist.txt.
+        /// </summary>
+        internal static string ProxyList {
+            get {
+                return ResourceManager.GetString("ProxyList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на https://geo.craigslist.org/iso/us.
         /// </summary>
         internal static string StartLink {

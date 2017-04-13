@@ -11,7 +11,13 @@ namespace CraigsListParser.Components
 {
     class WebHelpers : SingleTone<WebHelpers>
     {
-        public static string GetHtml(string link,WebProxy currentProxy) //получаем страницу в виде строки, которую будем парсить, но с использованием прокси
+        /// <summary>
+        /// Получает документ HTML в виде строки, используя прокси
+        /// </summary>
+        /// <param name="link">Адрес узла, который хотим получить</param>
+        /// <param name="currentProxy">Прокси, с помощью которого будем получать страницу</param>
+        /// <returns></returns>
+        public static string GetHtmlThrowProxy(string link,WebProxy currentProxy) //получаем страницу в виде строки, которую будем парсить, но с использованием прокси
         {
 
             HttpWebRequest req = (HttpWebRequest)WebRequest.Create(link);
@@ -29,9 +35,9 @@ namespace CraigsListParser.Components
             req.AllowAutoRedirect = true;
             try
             {
-                Console.WriteLine("Получаю страницу...");
+                //Console.WriteLine("Получаю страницу...");
                 HttpWebResponse res = (HttpWebResponse)req.GetResponse();
-                Console.WriteLine(res.StatusCode + " , " + (int)res.StatusCode);
+                //Console.WriteLine(res.StatusCode + " , " + (int)res.StatusCode);
                 System.IO.Stream ReceiveStream = res.GetResponseStream();
                 System.IO.StreamReader sr2 = new System.IO.StreamReader(ReceiveStream, Encoding.UTF8);
                 //Кодировка указывается в зависимости от кодировки ответа сервера
@@ -52,6 +58,10 @@ namespace CraigsListParser.Components
             }
         }
 
+        /// <summary>
+        /// Проверяет пинг до прокси сервера
+        /// </summary>
+        /// <param name="currentProxy">Прокси, который требуется проверить</param>
         internal static void ProxyPing(WebProxy currentProxy)
         {
             // Ping's the local machine.

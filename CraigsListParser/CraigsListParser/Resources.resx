@@ -145,6 +145,9 @@
     <value>400</value>
     <comment>Максимальный пинг для используемых прокси</comment>
   </data>
+  <data name="ProxyList" xml:space="preserve">
+    <value>proxylist.txt</value>
+  </data>
   <data name="StartLink" xml:space="preserve">
     <value>https://geo.craigslist.org/iso/us</value>
     <comment>Указаны все регионы, в которых могут быть предложения </comment>
