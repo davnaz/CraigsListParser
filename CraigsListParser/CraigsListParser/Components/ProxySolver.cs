@@ -56,9 +56,14 @@ namespace CraigsListParser.Components
 
             //А теперь исключим непигнуемые прокси
             Console.WriteLine("Проверяю прокси на доступность...");
-            proxyList.RemoveAll(i => ExcludeProxyByPing(i));
-            Console.WriteLine("Отфильтрованы по пингу в {0}мс:",Resources.MaxProxyPing);
-            File.AppendAllText("log.txt", String.Format("Количество рабочий прокси на {1}: {0}\n", proxyList.Count, DateTime.Now));
+            List<WebProxy> filteredProxies =
+                    proxyList.AsParallel()
+                                .Where(i => !ExcludeProxyByPing(i))
+                                .ToList();
+            proxyList = filteredProxies;
+            File.AppendAllText("log.txt", String.Format("Количество рабочих прокси на {1}: {0}\n", proxyList.Count, DateTime.Now));
+            //proxyList.RemoveAll(i => ExcludeProxyByPing(i));
+            //Console.WriteLine("Отфильтрованы по пингу в {0}мс:",Resources.MaxProxyPing);
             proxyList.ForEach(i => Console.WriteLine(i.Address));
             //Console.ReadKey();
         }
@@ -109,7 +114,7 @@ namespace CraigsListParser.Components
 
         private bool ExcludeProxyByPing(WebProxy currentProxy)
         {
-            Console.Write("Прокси {0} проверяется...", currentProxy.Address);
+            //Console.Write("Прокси {0} проверяется...", currentProxy.Address);
             // Ping's the proxy server.
             Ping pingSender = new Ping();
 
@@ -117,7 +122,7 @@ namespace CraigsListParser.Components
 
             if (reply.Status != IPStatus.Success) //если сервак не пингуется, то адьё
             {
-                Console.WriteLine(" Не доступен!");
+                //Console.WriteLine(" Не доступен!");
                 return true;
             }
             else
@@ -132,14 +137,14 @@ namespace CraigsListParser.Components
                     Console.WriteLine("В ресурсном файле неправильно записано значение максимального значения пинга для проски-сервера");
                     throw new Exception();
                 }
-                if(reply.RoundtripTime > maxPing) //если пинг сервака не соответсвует значению в Resources.resx, то говорим, что его не нужно  
+                if (reply.RoundtripTime > maxPing) //если пинг сервака не соответсвует значению в Resources.resx, то говорим, что его не нужно  
                 {
-                    Console.WriteLine(" Не годится по пингу: ({0})", reply.RoundtripTime);
+                    Console.WriteLine("Прокси {1} Не годится по пингу: ({0})", reply.RoundtripTime, currentProxy.Address);
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine(" Годится!");
+                    Console.WriteLine("Прокси {0} Годится!", currentProxy.Address);
                     return false;
                 }
             }
