@@ -293,6 +293,24 @@ namespace CraigsListParser
            
         }
 
+        public static void Print(Offer o)
+        {
+            Console.WriteLine("City: " + o.City);
+            Console.WriteLine("ID); " + o.PostID);
+            Console.WriteLine("Name); " + o.Name);
+            Console.WriteLine("Price); " + o.Price);
+            Console.WriteLine("PlaceName); " + o.PlaceName);
+            Console.WriteLine("PlaceMapsLink); " + o.PlaceMapsLink);
+            Console.WriteLine("Description); " + o.Description);
+            Console.WriteLine("BathRooms); " + o.BathRooms);
+            Console.WriteLine("BedRooms); " + o.BedRooms);
+            Console.WriteLine("Square); " + o.Square);
+            Console.WriteLine("Availability); " + o.Availability);
+            Console.WriteLine("Additional); " + o.Additional);
+            Console.WriteLine("Images); " + o.Images);
+            Console.WriteLine("Posted); " + o.Posted);
+            Console.WriteLine("Updated); " + o.Updated);
+        }
 
     }
 }

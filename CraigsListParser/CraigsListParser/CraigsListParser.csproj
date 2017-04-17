@@ -54,6 +54,7 @@
   <ItemGroup>
     <Compile Include="Components\Constants.cs" />
     <Compile Include="Components\DataProvider.cs" />
+    <Compile Include="Components\Parser.cs" />
     <Compile Include="Components\ProxySolver.cs" />
     <Compile Include="Components\SingleTone.cs" />
     <Compile Include="Components\WebHelpers.cs" />
