@@ -26,11 +26,16 @@ namespace CraigsListParser.Components
             parser = new HtmlParser(); //создание экземпляра парсера, он можнт быть использован несколько раз для одного потока(экземпляра класса Parser)
         }
 
+        private WebProxy UpdateInternalProxy()
+        {
+            return currentProxy = ProxySolver.Instance.getNewProxy();
+        }
+
         public void GetRegionsList(List<string> citiesList)
         {
             ProxySolver.Instance.getNewProxy();
             Console.WriteLine("Текущий прокси: " + ProxySolver.Instance.CurrentProxy.Address);
-            var citiesLinksDomElement = parser.Parse(WebHelpers.GetHtmlThrowProxy(Resources.StartLink, ProxySolver.Instance.CurrentProxy)).QuerySelectorAll(".height6.geo-site-list li > a");
+            var citiesLinksDomElement = parser.Parse(WebHelpers.GetHtmlThrowProxy(Resources.StartLink, currentProxy)).QuerySelectorAll(".height6.geo-site-list li > a");
             foreach (var link in citiesLinksDomElement)
             {
                 citiesList.Add(link.GetAttribute(Constants.WebAttrsNames.href));
@@ -62,10 +67,10 @@ namespace CraigsListParser.Components
         /// <param name="regionLink">Полный адрес сайта региона для выборки</param>
         public void StartParsing(string regionLink)
         {
-            string searchPageInline = WebHelpers.GetHtmlThrowProxy(regionLink + Resources.HouseSearchLinkPostfix, ProxySolver.Instance.CurrentProxy); //парсим обычным образом
+            string searchPageInline = WebHelpers.GetHtmlThrowProxy(regionLink + Resources.HouseSearchLinkPostfix, currentProxy); //парсим обычным образом
             if (searchPageInline == Constants.WebAttrsNames.NotFound)                                                      //, а если не получится, пробуем по другому постфиксу(для некоторых регионов
             {
-                searchPageInline = WebHelpers.GetHtmlThrowProxy(regionLink + Resources.AltHouseSearchLinkPostfix, ProxySolver.Instance.CurrentProxy);
+                searchPageInline = WebHelpers.GetHtmlThrowProxy(regionLink + Resources.AltHouseSearchLinkPostfix, currentProxy);
             }
             var searchPageDOM = parser.Parse(searchPageInline); //получаем стартовую страницу выдачи нужных предложений.
             AngleSharp.Dom.IElement searchResultNextPageLink = null;
@@ -77,22 +82,19 @@ namespace CraigsListParser.Components
             {
                 Console.WriteLine(e.Message);
             }
-            if (searchResultNextPageLink != null)
+            //парсим результаты на текущей странице
+            if (searchResultNextPageLink != null)  
             {
                 string oldSearchResultNextPageLinkstring = "=";
                 do
                 {
                     Console.WriteLine("Начинаем парсить страницу выдачи: {0}{1}", regionLink, searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href));
-
-
                     ParseOffersListPage(searchPageDOM, regionLink); //парсим предложения этой страницы
-
-
                     Console.WriteLine("Спарсили текущую страницу выдачи!");
-
-                    var offersListPageHtmlDocument = parser.Parse(WebHelpers.GetHtmlThrowProxy(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href), ProxySolver.Instance.CurrentProxy));  //получаем DOM-документ одной страницы выдачи предложений
+                    var offersListPageHtmlDocument = parser.Parse(WebHelpers.GetHtmlThrowProxy(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href), currentProxy));  //получаем DOM-документ одной страницы выдачи предложений
 
                     searchResultNextPageLink = offersListPageHtmlDocument.QuerySelector("a.button.next"); //берем элемент со ссылкой на следующую страницу
+
                     if (searchResultNextPageLink == null)
                     {
                         break;
@@ -110,11 +112,10 @@ namespace CraigsListParser.Components
                         }
                     }
 
-
                     Console.WriteLine(searchResultNextPageLink != null ? "Получено:" + regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href) : "На этой странице нет результатов и ссылок на следующую страницу!");
                     if (searchResultNextPageLink != null)
                     {
-                        searchPageDOM = parser.Parse(WebHelpers.GetHtmlThrowProxy(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href), ProxySolver.Instance.CurrentProxy));
+                        searchPageDOM = parser.Parse(WebHelpers.GetHtmlThrowProxy(regionLink + searchResultNextPageLink.GetAttribute(Constants.WebAttrsNames.href), currentProxy));
                     }
                     Console.WriteLine("------------------------------------------");
 
@@ -124,7 +125,7 @@ namespace CraigsListParser.Components
             {
                 Console.WriteLine("Nothing to parse");
                 ProxySolver.Instance.getNewProxy();
-                File.AppendAllText("log.txt", String.Format("Регион не спарсился или там нет предложений жилья: {0}, {1}\n", regionLink, DateTime.Now)); //если не спарсилось, заносим в лог
+                //File.AppendAllText("log.txt", String.Format("Регион не спарсился или там нет предложений жилья: {0}, {1}\n", regionLink, DateTime.Now)); //если не спарсилось, заносим в лог
                 string UnsecureRegionLink = regionLink.Replace("https", "http");
                 if (regionLink.Length != UnsecureRegionLink.Length)
                 {
@@ -132,7 +133,7 @@ namespace CraigsListParser.Components
                 }
             }
             Console.WriteLine("Регион " + regionLink + "обработан!");
-            File.AppendAllText("log.txt", String.Format("Регион обработан: {0}, {1}\n", regionLink, DateTime.Now));
+            //File.AppendAllText("log.txt", String.Format("Регион обработан: {0}, {1}\n", regionLink, DateTime.Now));
             //Console.ReadKey();
         }
 
@@ -162,19 +163,31 @@ namespace CraigsListParser.Components
             return false;
         }
 
-        private static void ParseOffersListPage(IHtmlDocument searchPageDOM, string regionLink)
+        private void ParseOffersListPage(IHtmlDocument searchPageDOM, string regionLink)
         {
-            ProxySolver.Instance.getNewProxy();
-            Console.WriteLine("Текущий прокси: " + ProxySolver.Instance.CurrentProxy.Address);
+            UpdateInternalProxy();
+            Console.WriteLine("Текущий прокси: " + currentProxy.Address);
             SqlCommand insertOfferCommand = DataProvider.Instance.CreateSQLCommandForInsertSP();
 
             insertOfferCommand.Connection = DataProvider.Instance.Connection;
             insertOfferCommand.Connection.Open();
 
             var links = searchPageDOM.QuerySelectorAll(".result-title.hdrlnk");
-            for (int i = 0; i < links.Length; i++)
+            List<IElement> linksList = new List<IElement>(links.ToList());
+            for(int i = 0;i < linksList.Count;i++) // "craigslist.org" в ссылке - явный индикатор альтернативного предложения из другого региона
             {
-                Offer o = ParseOffer(parser.Parse(WebHelpers.GetHtmlThrowProxy(regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href), ProxySolver.Instance.CurrentProxy))); //теперь парсим каждую отдельную ссылку(предложение)
+                if(links[i].GetAttribute(Constants.WebAttrsNames.href).Contains("craigslist.org")) 
+                {
+                    Console.WriteLine(links[i].GetAttribute("href"));
+                    linksList.RemoveRange(i,linksList.Count-1-i);
+                    break;
+                  
+                }
+            }
+            
+            for (int i = 0; i < linksList.Count; i++)
+            {
+                Offer o = ParseOffer(parser.Parse(WebHelpers.GetHtmlThrowProxy(regionLink + linksList[i].GetAttribute(Constants.WebAttrsNames.href), currentProxy))); //теперь парсим каждую отдельную ссылку(предложение)
 
                 if (o != null)
                 {
@@ -182,13 +195,11 @@ namespace CraigsListParser.Components
                 }
                 else
                 {
-                    File.AppendAllText("log.txt", String.Format("Не спарсилось: {0},{1}\n", regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href), DateTime.Now)); //если не спарсилось, заносим в лог
+                    //File.AppendAllText("log.txt", String.Format("Не спарсилось: {0},{1}\n", regionLink + links[i].GetAttribute(Constants.WebAttrsNames.href), DateTime.Now)); //если не спарсилось, заносим в лог
                 }
             }
             insertOfferCommand.Connection.Close();
         }
-
-
 
         private static void InsertIntoDB(Offer o, SqlCommand insertOfferCommand)
         {
@@ -213,9 +224,7 @@ namespace CraigsListParser.Components
             DataProvider.Instance.ExecureSP(insertOfferCommand);
         }
 
-
-
-        private static Offer ParseOffer(IHtmlDocument htmlDocument) //парсит документ DOM конкретного предложения жилья
+        private Offer ParseOffer(IHtmlDocument htmlDocument) //парсит документ DOM конкретного предложения жилья
         {
             Offer o = new Offer();
 
@@ -233,8 +242,8 @@ namespace CraigsListParser.Components
             if (htmlDocument.QuerySelector("link") == null)
             {
                 Console.WriteLine("Ссылка битая!");
-                ProxySolver.Instance.getNewProxy();
-                Console.WriteLine("Прокси обновлен:" + ProxySolver.Instance.CurrentProxy.Address);
+                UpdateInternalProxy();
+                Console.WriteLine("Прокси обновлен:" + currentProxy.Address);
                 return null;
             }
             else
@@ -244,12 +253,12 @@ namespace CraigsListParser.Components
             }
         }
 
-        private static string getCity(IHtmlDocument htmlDocument)
+        private string getCity(IHtmlDocument htmlDocument)
         {
             return htmlDocument.QuerySelector(Constants.OfferSelectorNames.City) != null ? htmlDocument.QuerySelector(Constants.OfferSelectorNames.City).TextContent : "No City"; //если на странице есть цена, возвращаем, иначе возвращаем 0
         }
 
-        private static string getImages(IHtmlDocument htmlDocument)
+        private string getImages(IHtmlDocument htmlDocument)
         {
             var scripts = htmlDocument.QuerySelectorAll("script");
             foreach (var script in scripts)
@@ -262,7 +271,7 @@ namespace CraigsListParser.Components
             return "";
         }
 
-        private static long GetID(IHtmlDocument htmlDocument)
+        private long GetID(IHtmlDocument htmlDocument)
         {
             var a = htmlDocument.QuerySelector("link[rel=canonical]");
 
