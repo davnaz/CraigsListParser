@@ -125,6 +125,18 @@
     <value>https://losangeles.craigslist.org</value>
     <comment>Базовая страница для адресов страниц, которые нуно парсить</comment>
   </data>
+  <data name="CraigslistMaxPricePostfixForGetrequest" xml:space="preserve">
+    <value>max_price=</value>
+    <comment>Постфикс для GET-запроса с указанием максимальной цены</comment>
+  </data>
+  <data name="CraigsListMaxSearchresvalue" xml:space="preserve">
+    <value>2500</value>
+    <comment>Максимальное количество результатов, которое может выдать сайт</comment>
+  </data>
+  <data name="CraigslistMinPricePostfixForGetrequest" xml:space="preserve">
+    <value>min_price=</value>
+    <comment>Постфикс для GET-запроса с указанием минимальной цены</comment>
+  </data>
   <data name="DbConnectionString" xml:space="preserve">
     <value>Data Source=NOTEBOOK;Initial Catalog=CraigsList;Integrated Security=True</value>
     <comment>Эта строка нужна для подключения к БД CraigsList на Текущем компьютере NOTEBOOK</comment>
@@ -151,5 +163,9 @@
   <data name="StartLink" xml:space="preserve">
     <value>https://geo.craigslist.org/iso/us</value>
     <comment>Указаны все регионы, в которых могут быть предложения </comment>
+  </data>
+  <data name="MaxDegreeOfParallelism" xml:space="preserve">
+    <value>10</value>
+    <comment>Количество потоков. которое будет создавать программа</comment>
   </data>
 </root>

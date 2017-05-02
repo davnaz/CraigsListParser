@@ -4,8 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
-using System.Text;
-using System.Threading.Tasks;
+using CraigsListParser.Components;
 
 namespace CraigsListParser.Components
 {
@@ -57,16 +56,31 @@ namespace CraigsListParser.Components
             //А теперь исключим непигнуемые прокси
             Console.WriteLine("Проверяю прокси на доступность...");
             List<WebProxy> filteredProxies =
-                    proxyList.AsParallel()
+                    proxyList.AsParallel()                    
                                 .Where(i => !ExcludeProxyByPing(i))
+                                .WithDegreeOfParallelism(Convert.ToInt32(Resources.MaxDegreeOfParallelism))
                                 .ToList();
             proxyList = filteredProxies;
+            Console.WriteLine("Check by ping was success for {0} proxies.",proxyList.Count);
+            filteredProxies =
+                    proxyList.AsParallel()
+                                .Where(i => !ExcludeProxyByTestLink(i))
+                                .WithDegreeOfParallelism(Convert.ToInt32(Resources.MaxDegreeOfParallelism))
+                                .ToList();
+            proxyList = filteredProxies;
+            Console.WriteLine("Check by the test link was success for {0} proxies.", proxyList.Count);
             File.AppendAllText("log.txt", String.Format("Количество рабочих прокси на {1}: {0}\n", proxyList.Count, DateTime.Now));
             //proxyList.RemoveAll(i => ExcludeProxyByPing(i));
             //Console.WriteLine("Отфильтрованы по пингу в {0}мс:",Resources.MaxProxyPing);
-            proxyList.ForEach(i => Console.WriteLine(i.Address));
+            //proxyList.ForEach(i => Console.WriteLine(i.Address));
             //Console.ReadKey();
         }
+
+        private bool ExcludeProxyByTestLink(WebProxy i)
+        {
+            return WebHelpers.GetHtmlThrowProxy(Resources.StartLink, i) == Constants.WebAttrsNames.NotFound ? true : false;           
+        }
+
         /// <summary>
         /// Получает текущий прокси. 
         /// Если он не был ранее получен методом  getNewProxy(), то возвращает результат вызова getNewProxy()

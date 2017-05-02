@@ -59,7 +59,8 @@ namespace CraigsListParser.DataProviders
             }
             catch(SqlException ex)
             {
-                throw new Exception(ex.Message, ex);
+                //throw new Exception(ex.Message, ex);
+
             }
             finally
             {

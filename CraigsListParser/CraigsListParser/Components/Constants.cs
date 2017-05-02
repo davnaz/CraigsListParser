@@ -8,6 +8,12 @@ namespace CraigsListParser.Components
 {
     public class Constants
     {
+        public class PriceValues
+        {
+            public const int undefinedValue = -1;
+            public const int maxValue = 2500;
+        }
+
         public class WebAttrsNames
         {
             public const string href = "href";

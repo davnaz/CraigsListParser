@@ -79,6 +79,33 @@ namespace CraigsListParser {
         }
         
         /// <summary>
+        ///   Ищет локализованную строку, похожую на max_price=.
+        /// </summary>
+        internal static string CraigslistMaxPricePostfixForGetrequest {
+            get {
+                return ResourceManager.GetString("CraigslistMaxPricePostfixForGetrequest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на 2500.
+        /// </summary>
+        internal static string CraigsListMaxSearchresvalue {
+            get {
+                return ResourceManager.GetString("CraigsListMaxSearchresvalue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на min_price=.
+        /// </summary>
+        internal static string CraigslistMinPricePostfixForGetrequest {
+            get {
+                return ResourceManager.GetString("CraigslistMinPricePostfixForGetrequest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Ищет локализованную строку, похожую на Data Source=NOTEBOOK;Initial Catalog=CraigsList;Integrated Security=True.
         /// </summary>
         internal static string DbConnectionString {
@@ -111,6 +138,15 @@ namespace CraigsListParser {
         internal static string MainLink {
             get {
                 return ResourceManager.GetString("MainLink", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Ищет локализованную строку, похожую на 10.
+        /// </summary>
+        internal static string MaxDegreeOfParallelism {
+            get {
+                return ResourceManager.GetString("MaxDegreeOfParallelism", resourceCulture);
             }
         }
         
