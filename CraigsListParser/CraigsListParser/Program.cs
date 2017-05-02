@@ -28,15 +28,14 @@ namespace CraigsListParser
                 if (citiesList.Count !=0) { break; }
             }
             
-            //ParallelOptions options = new ParallelOptions();
-            //options.MaxDegreeOfParallelism = Convert.ToInt32(Resources.MaxDegreeOfParallelism);
-            //Parallel.ForEach(citiesList, options, (city) =>
-            //{
-            //    Parser p = new Parser();
-            //    p.StartParsing(city, 0, 1000000);
-            //});
-            Parser p = new Parser();
-            p.StartParsing("https://boston.craigslist.org", 0, 250000);
+            ParallelOptions options = new ParallelOptions();
+            options.MaxDegreeOfParallelism = Convert.ToInt32(Resources.MaxDegreeOfParallelism);
+            Parallel.ForEach(citiesList, options, (city) =>
+            {
+                Parser p = new Parser();
+                p.StartParsing(city, 0, 1000000);
+            });
+
 
             Console.WriteLine("Работа парсера завершена. Для продолжения нажмите любую клавишу...");
             Console.ReadKey();
